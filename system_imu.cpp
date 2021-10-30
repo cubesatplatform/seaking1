@@ -1,7 +1,8 @@
 
 #include "system_imu.h"
 
-#ifdef PORTENTA
+
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
 #include <pinDefinitions.h>
 
 #define IMU_OBC_NSS PinNameToIndex(PB_4)
@@ -130,7 +131,7 @@ void CIMU::setup(){
 }
 
 void CIMU::setupSPI(){
-#ifdef PORTENTA
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
     Name("IMUSPI");
 //   myIMU.enableDebugging(Serial); //Pipe debug messages to Serial port
    delay(1000);

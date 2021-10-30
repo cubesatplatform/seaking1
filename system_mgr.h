@@ -16,7 +16,6 @@
 
 
 #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
-    #define PORTENTA    
    // #include <pinDefinitions.h>
 /*
     #define IMU_OBC_NSS PinNameToIndex(PB_4)

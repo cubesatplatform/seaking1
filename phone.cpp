@@ -44,7 +44,7 @@ void CPhone::setup() {
 
  writeconsoleln("..................................... Setup .....................................");
 
-#ifdef PORTENTA
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
   Serial1.begin(PHONE_BAUD_RATE);
 #else  
   //Serial1.begin(PHONE_BAUD_RATE, SERIAL_8N1, PHONE_TX, PHONE_RX);

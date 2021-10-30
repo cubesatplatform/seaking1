@@ -2,7 +2,7 @@
 #include <esp_task_wdt.h>
 #endif
 
-#ifdef PORTENTA
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
 #include <Watchdog.h>
 #endif
 

@@ -314,7 +314,7 @@ void CSystemMgr::setupIMUI2C(TwoWire *wire){
 
 
 void CSystemMgr::setupIMUSPI(){
-#ifdef PORTENTA
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)  
   BNO080 myIMU;
 for(int retries=0;retries<5;retries++){
     if(myIMU.beginSPI(IMU_OBC_NSS, IMU_OBC_WAKE, IMU_OBC_INT, IMU_OBC_RST) == false)
@@ -356,7 +356,7 @@ void CSystemMgr::pinsOff(){
 
 
 void CSystemMgr::phone(){
-  #ifdef PORTENTA
+  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
  //  pinMode(PA_11, OUTPUT);
 
   
@@ -386,7 +386,7 @@ void CSystemMgr::sendSerial(const char* cmd) {    //Send to Phone
 
 
 void CSystemMgr::burn(){
-    #ifdef PORTENTA
+  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
   // pinMode(PI_10, OUTPUT);
    digitalWrite(PI_10, HIGH);  //   
    delay(10000);
@@ -398,7 +398,7 @@ void CSystemMgr::burn(){
 
 
 void CSystemMgr::enableI2C(){
-    #ifdef PORTENTA
+  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
  // pinMode(PA_12, OUTPUT);
   digitalWrite(PA_12, HIGH);  //
 
@@ -472,7 +472,7 @@ void CSystemMgr::SendCmd(std::string str) {
   return;
   }
 
-  #ifdef PORTENTA
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
 if  (str == "MAG"){
   Adafruit_DRV8830 drv;
   #define DRV_I2C_ADDR 0x60
@@ -604,7 +604,8 @@ if  (str == "MAG"){
     setupIMUI2C(&Wire1);
     return;
   }
-#ifdef PORTENTA
+
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)  
   if (str == "IMU2") {
     writeconsole("IMU2");
     TwoWire mWire2(PH_12,PH_11); 
@@ -696,11 +697,11 @@ if  (str == "MAG"){
 
     if(bat>60){
       CSatellite *psat= getSatellite();
-      if(!psat->_burncount&&psat-> deployantenna.stateCount()<5){
+      if(!psat->_burncount&&psat-> deployantenna.stateCount()<2){
           msg.setSTATE("DEPLOY");
           addMessageList(msg);
       }
-      else  if(!psat->_detumblecount&psat->detumble.stateCount()<5){
+      else  if(!psat->_detumblecount&psat->detumble.stateCount()<2){
           msg.setSTATE("DETUMBLE");
           addMessageList(msg);
       }

@@ -65,7 +65,7 @@ void CSatellite::stats(){
 }
 
 void CSatellite::setup() {    //Anything not in a loop must be setup manually  or have setup done automatically when called
-    #ifdef PORTENTA
+    #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)    
     CFS fs;
 //  fs.writeFile(100);
 //  fs.deleteFile();

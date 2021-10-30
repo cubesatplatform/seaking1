@@ -704,6 +704,10 @@ if  (str == "MAG"){
           msg.setSTATE("DETUMBLE");
           addMessageList(msg);
       }
+      else if(0){
+        msg.setSTATE("PHONE");
+        addMessageList(msg);        
+      }
       else {
         msg.setSTATE("NORMAL");
         addMessageList(msg);        

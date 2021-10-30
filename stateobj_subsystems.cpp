@@ -32,30 +32,20 @@ void CStateObj::addSystem(CMsg &msg){
       return; //Prevents from too many things running and blowing up system memory
     }
   
-
+/*
   #ifdef TTGO
   if (sys == "GPS") psys = new CGPS(msg);
   #endif
 
   if (sys == "IMU") psys = new CIMU(msg);
-  if (sys == "RW") psys = new CRW(msg);
+  if (sys == "MT") psys =  &MT;
+  if (sys == "MAGX") psys =  &MAGX;
+  if (sys == "MAGY") psys =  &MAGY;
+  if (sys == "MAGZ") psys =  &MAGZ;
   if (sys == "LIGHT") psys = new CLight(msg);
   if (sys == "DATAREQUEST") psys = new CDataRequest(msg);
-  
-
-    if (sys == "RGB") {
-      msg.Parameters["NAME"]="LIGHTRED";
-      psys = new CLight(msg);
-      if (psys!=NULL) subsystems.push_back(psys); 
-
-       msg.Parameters["NAME"]="LIGHTGREEN";
-      psys = new CLight(msg);
-      if (psys!=NULL) subsystems.push_back(psys);
-
-       msg.Parameters["NAME"]="LIGHTBLUE";
-      psys = new CLight(msg);
-      if (psys!=NULL) subsystems.push_back(psys);
-    }
+*/
+  psys=getSystem(sys.c_str());
 
   if (psys!=NULL) subsystems.push_back(psys); 
 }

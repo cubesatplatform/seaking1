@@ -5,6 +5,7 @@
 class CLowPowerState : public CStateObj {
 public:
 	CLowPowerState() {
+    _name="LowPower";
 		//add some items to the map
 		//availablesystems["LIGHT"] = true;
 		//availablesystems["IMU"] = true;

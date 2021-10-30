@@ -2,6 +2,7 @@
 #include "stateobj.h"
 
 
+
 class CDeployAntennaState: public CStateObj {
 public:
 	CDeployAntennaState() {
@@ -14,7 +15,7 @@ public:
   void stateMsg(CMsg &msg){_statemsg=msg;};
 	void setup() {};
 
-  void enter() { CStateObj::enter();writeconsole("Enter Deploy Antenna"); }
+  void enter(); 
   void exit() { CStateObj::exit();writeconsole("Exit Deploy Antenna"); }
 
 };

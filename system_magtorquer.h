@@ -11,7 +11,26 @@ class CMagTorquer:public CSystemObject{
     long _timeStart=0;
     long _timeEnd=0;
     long _timeLast=0;
+    bool _bMagOn=false;
+    long _lastMag=0;
     unsigned long _prevTime=0;
+
+
+ 
+     float _difx=0.0;
+     float _dify=0.0;
+     float _difz=0.0;
+     
+     
+     float _lastx=0.0;
+     float _lasty=0.0;
+     float _lastz=0.0;
+    
+
+    CMDrive *pMAGX=NULL;
+    CMDrive *pMAGY=NULL;
+    CMDrive *pMAGZ=NULL;
+    CIMU *pIMU=NULL; 
     
   public:
     CMagTorquer();
@@ -19,13 +38,11 @@ class CMagTorquer:public CSystemObject{
     ~CMagTorquer(){}
 
     void setup();
-    void initMode();
       
     void loop();
   
-    void modeDetumble();
-    void modeManual();
-
+    void Detumble();    
+    bool calcDiffs();
     bool activateMag(CMsg &msg) ;
     bool activateMag(char axis,float val) ;
     

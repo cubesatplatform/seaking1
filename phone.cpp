@@ -9,7 +9,7 @@ void CPhone::newCMD(CMsg &msg){
 }
 */
 
-void  CPhone::callNewFunction(CMsg &msg){
+void  CPhone::callCustomFunctions(CMsg &msg){
   std::string act=msg.getACT();
   
   writeconsoleln(act);

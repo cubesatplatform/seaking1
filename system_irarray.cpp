@@ -214,11 +214,11 @@ bool CIRArray::isConnected()
 }
 
 
-void  CIRArray::callNewFunction(CMsg &msg){
+void  CIRArray::callCustomFunctions(CMsg &msg){
   std::string act=msg.getACT();
   
   writeconsoleln(act);
   
-  if(act=="RUN") runOnce();
+  if(act=="IRRUN") runOnce();
  
 }

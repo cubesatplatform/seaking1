@@ -46,7 +46,23 @@ void CEPS::setup(){
   
 }
 
-void CEPS::loop(){
+void CEPS::loop(){   //FIX THIS  JUST FOR TESTING
+  CMsg msg;
+  if(rand() % 5==1){
+    
+    msg.setSTATE("LOWPOWER");
+    addMessageList(msg);
+  }
+  else{
+      if(rand() % 2==1){
+       msg.setSYS("SYSTEMMGR");
+       msg.setACT("POWERLEVEL");
+       msg.setParameter("LEVEL",69.5);
+       addMessageList(msg);
+      }
+    
+  }
+  return;
   writeconsoleln("HELLO POWER");
 
  // writeSWSelflock(0);
@@ -129,7 +145,7 @@ void CEPS::loop(){
 void CEPS::init(){
   Name("EPS");
   _forever=true;
-  _INTERVAL=1000;
+  _INTERVAL=10000;
   //begin(addr,readI2C,writeI2C);
   setState("READY");
 }

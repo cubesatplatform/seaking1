@@ -2,14 +2,14 @@
 #include "stateobj.h"
 
 
-class CADCSState : public CStateObj {
+class CDetumbleState : public CStateObj {
 public:
-	CADCSState();
-	~CADCSState();
+  CDetumbleState();
+  ~CDetumbleState();
 
-	void setup();
+  void setup();
   void stateMsg(CMsg &msg);
   void enter();
   void exit();
-	
+  
 };

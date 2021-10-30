@@ -1,9 +1,13 @@
 #include "cubesat.h"
 #include "satwatchdog.h"
 
+
 #include <map>
 #include <list>
 #include <bitset>
+
+
+
 
 
 ////////////////////////  DONT WRITE TO SERIAL PORT BEFORE ITS DECLARED  -----   NO WRITING TO CONSOLE IN CONSTRUCTORS OF SYSTEMS THAT ARE BELOW ----------------------////////////////////////////////////////////////
@@ -26,6 +30,8 @@ void setup() { // leave empty
 //  esp_task_wdt_init(WDT_TIMEOUT, true); //enable panic so ESP32 restarts
 //  esp_task_wdt_add(NULL); //add current thread to WDT watch
   #endif
+
+
   }
 
 
@@ -51,7 +57,22 @@ void mysetup() {  //init here
 
 void loop() {  
   mysetup(); 
-  long lastTime=0;
+  unsigned count=0;
+  while( sat.loop()){ 
+    count++; 
+    if(count>50000){   //CHECKS EVERY FEW MINUTES : 5000000
+      writeconsole("WatchDog Loop!!!   State:");
+      writeconsoleln(sat.pstate->Name());
+      satdog.loop();    
+      count=0;
+    }  
+  }      
+}
+
+/*
+ * 
+ *   
+ *     long lastTime=0;
     long lastTimeA=0;
 
      long lastTimeB=0;
@@ -76,10 +97,7 @@ void loop() {
   
   int nspeed=8;
   std::string str;
-   while( sat.loop()){ 
-   
-
-    writeOut();  
+  writeOut();  
      if(getTime()>lastTime+3000){
       writeconsole(".");
       
@@ -106,7 +124,7 @@ void loop() {
     if(getTime()>lastTimeA+3){
       //writeconsole("...............Message Motor.....................");
       CMsg msg;
-      lastTimeA=getTime();
+      lastTimeA=getTime();W
       msg.setSYS("MOTOR");
       msg.setACT("SPEED");
       nspeed*=-1;
@@ -119,9 +137,4 @@ void loop() {
       //       msg.Parameters["BLK"]="2";
       sat.MSG.newMessage(msg);
     }
-  }
-
-
-  satdog.loop();    
-    
-}
+ */

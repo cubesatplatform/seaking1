@@ -64,6 +64,6 @@ public:
   bool runOnce();
   std::string strData(int z);
   void Output();
-  void callNewFunction(CMsg &msg);
+  void callCustomFunctions(CMsg &msg);
 
 };

@@ -1,8 +1,9 @@
 #pragma once
 #include <defs.h>
 
-#include "state_adcs.h"
 #include "state_lowpower.h"
+#include "state_detumble.h"
+#include "state_adcs.h"
 #include "state_normal.h"
 #include "state_deployantenna.h"
 #include "state_core.h"
@@ -11,9 +12,6 @@
 #include "system_imu.h"
 #include "system_irarray.h"
 #include "system_imu.h"
-#ifdef TTGO
-  #include "system_gps.h"
-#endif  
 #include "system_reactionwheel.h"
 #include "system_magtorquer.h"
 #include "radio.h"
@@ -23,39 +21,42 @@
 #include "phone.h"
 #include "system_light.h"
 #include "ceps.h"
+#include <portentafs.h>
+
+#ifdef TTGO
+  #include "system_gps.h"
+#endif  
 
 
 
 #include "messages.h"
 
 class CSatellite {
+  public:
 	std::list<CSystemObject*> coresystems;
 
 	unsigned long lcount=0;
+  CDetumbleState detumble;
 	CLowPowerState lowpower;   //0
 	CNormalState normal;        //1
 	CDeployAntennaState deployantenna;   //2
 	CADCSState adcs;   //3
   CCoreState Core;
   CPhoneState phone;
+
   
 
-public:
 
- // CEPS Power;
+  int _burncount=0;
+  int _detumblecount=0;
+
+  CEPS Power;
   CRadio Radio; 
   CIMU IMUI2C;   
-//  CLight Light;
-//  CPWMController PWM1;
-//  CPWMController PWM2;
-//  CMDrive MAGX;
-//  CMDrive MAGY;
-//  CMDrive MAGZ;
-  CMotorController MotorX;
-//  CMotorController MotorY;
-//  CMotorController MotorZ;
-  //CPWM PWMPin;
-//  CSystemMgr Mgr;
+
+  CSystemMgr Mgr;
+  CRW RW;
+  CMagTorquer MT;
   //CRadio Radio2; 
  // CIMU IMUSPI;
 //  CPhone Phone;  
@@ -72,8 +73,8 @@ public:
   //CThermometer TempZ1;
   //CThermometer TempZ2;
   //CThermometer TempOBC;
-  //CRW RW;
-  //CMagTorquer MT;
+
+  
 #ifdef TTGO
 //   CGPS gps;
 #endif

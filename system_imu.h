@@ -46,6 +46,7 @@ struct CIData{
   SimpleKalmanFilter kfY;
   SimpleKalmanFilter kfZ;
   CIData(){}
+  
   void archiveData(){
     prevR=R;
     prevX=X;
@@ -105,7 +106,11 @@ struct CIData{
     }
   //writeconsoleln("End Desearialize");
   }
-  
+    
+    float K_R(){return kfR.updateEstimate(R);}
+    float K_X(){return kfX.updateEstimate(X);}
+    float K_Y(){return kfY.updateEstimate(Y);}
+    float K_Z(){return kfZ.updateEstimate(Z);}
 };
 
 class CIMU:public CSystemObject{
@@ -138,7 +143,7 @@ class CIMU:public CSystemObject{
     void fillData();
     void switchPlay(){};      //This needs to be set manually by some other function using the IMU to have it start getting data  Other systems will advance automatically
     long UpdatedOn(){return _dataUpdatedOn;}
-    void callNewFunction(CMsg &msg){writeconsoleln("---------------------------------------------- callNewFunction(msg)  ------------------------------------------------------------");};
+    void callCustomFunctions(CMsg &msg){writeconsoleln("---------------------------------------------- callCustomFunctions(msg)  ------------------------------------------------------------");};
 
 /*
     float K_GyroX(){tic();return simpleKalmanFilterGyroX.updateEstimate(gyrox);}

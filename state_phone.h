@@ -1,6 +1,7 @@
 #pragma once
 #include "stateobj.h"
 
+//Need to charge Phone !
 
 class CPhoneState: public CStateObj {
 public:
@@ -14,7 +15,7 @@ public:
   void stateMsg(CMsg &msg){_statemsg=msg;};
   void setup() {};
 
-void enter() { CStateObj::enter();writeconsole("Enter Phone"); }
+void enter() { CStateObj::enter();writeconsole("Enter Phone  Need to charge Phone"); }
   void exit() { CStateObj::exit();writeconsole("Exit Phone"); }
 
 

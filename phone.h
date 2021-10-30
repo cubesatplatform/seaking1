@@ -93,5 +93,5 @@ class CPhone:public CSystemObject {
     void on();
     void off();
     void ready();
-    void callNewFunction(CMsg &msg);
+    void callCustomFunctions(CMsg &msg);
 };

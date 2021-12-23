@@ -1,22 +1,34 @@
 #include "cubesat.h"
 
 
-bool CSatellite::loop() {
-    MsgPump();
+void CSatellite::loop() {   
+    MsgPump();  
     Core.loop();   
-   
+
+    /*
+    if(getTime()>pstate->startTime()+SAT_STATE_TIME_MAX){
+      
+      if(pstate->Name()!="LOWPOWER"){        
+        CMsg msg;    
+        msg.setSTATE("LOWPOWER");
+        Radio.addMessageList(msg);  
+      }
+    }
+*/
+
     pstate->loop();     
-    return true;
   }
 
 CSatellite::CSatellite() {
+  Name("SAT");
 	pstate = &normal;
 	}
 
 
 void CSatellite::newState(CMsg &msg) {
+
     //writeconsoleln("    ________________________________________________________________________________________________________________  New State");
-    std::string s=msg.getSTATE();
+    std::string s=msg.getACT();
     if(s.size()>1){
       CStateObj *tmpstate=pstate;
       if (s == "LOWPOWER")  tmpstate = &lowpower;
@@ -28,116 +40,192 @@ void CSatellite::newState(CMsg &msg) {
 
 
       if(tmpstate!=pstate){  //Don't reset if you are already in that state
-        writeconsole(s);
-        writeconsoleln("    _______________________  New State");
+        writeconsole(s);        writeconsoleln("    _______________________  New State");
         pstate->exit();
         pstate=tmpstate;
         pstate->stateMsg(msg);  //Passes parameters of what you want the state to do
         pstate->enter();
       }
     }
+
   }
 
+
+
+
+
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
+void resetFunc(){
+  NVIC_SystemReset();
+}
+#else
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
+#endif
 
 void CSatellite::newMsg(CMsg &msg) {
   std::string sys=msg.getSYS();
   std::string act=msg.getACT();
+ // writeconsoleln("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+  if(act=="START"){
+   // writeconsoleln("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+     pstate->newMsg(msg);  
+     return;    
+  }
 
-  if(sys!="CORE") return;
-  if(act=="STATE") newState(msg);
-  if(act=="STATS") stats();
-  if(act=="RESET") resetFunc();
-  if(act=="TRANSMITDATA") MSG.movetoTransmitList(msg);
-  if(act=="DATALISTCLEAR") MSG.DataList.clear();
-  if(act=="MESSAGESLISTCLEAR") MSG.MessagesList.clear();
-  if(act=="TRANSMITLISTCLEAR") MSG.TransmitList.clear();
-  if(act=="TRANSMITTEDLISTCLEAR") MSG.TransmittedList.clear();
+  if(sys=="SAT") {   
+ //   writeconsoleln("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
+    if(act=="STATS") stats();
+    if(act=="RESET") resetFunc();
+    if(act=="TRANSMITDATA") MSG.movetoTransmitList(msg);
+    if(act=="DATALISTCLEAR") MSG.DataList.clear();
+    if(act=="MESSAGESLISTCLEAR") MSG.MessagesList.clear();
+    if(act=="TRANSMITLISTCLEAR") MSG.TransmitList.clear();
+    if(act=="TRANSMITTEDLISTCLEAR") MSG.TransmittedList.clear();
+    if((act=="NORMAL") ||(act=="LOWPOWER") ||(act=="DEPLOY") ||(act=="DETUMBLE") ||(act=="ADCS")||(act=="PHONE"))
+      newState(msg);
+  }
+  else{
+    CSystemObject *psys=getSystem(sys.c_str(),"CSatellite::newMsg(CMsg &msg)");
+    if(psys!=nullptr){    
+       psys->newMsg(msg);       
+      }
+    return;  
+  }
 }
 
 
 void CSatellite::stats(){
-  CMsg m=pstate->stats();
-  MSG.TransmitList.push_back(m);
-  m=Core.stats();
-  MSG.TransmitList.push_back(m);
-  
+  pstate->stats();  
+  Core.stats();  
 }
 
 void CSatellite::setup() {    //Anything not in a loop must be setup manually  or have setup done automatically when called
-    #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)    
-    CFS fs;
-//  fs.writeFile(100);
-//  fs.deleteFile();
-    _burncount=fs.readFile();
-    Serial.println();
-  #endif
+  Core.addSystem(&Radio);
+  Core.addSystem(&Mgr);  
+  IRX1.Name("IRX1");
+  IRX2.Name("IRX2");
+  IRY1.Name("IRY1");
+  IRY2.Name("IRY2");
+  IRZ1.Name("IRZ1");
+  IRZ2.Name("IRZ2");
+  
+  MagX.Name("MAGX");
+  MagY.Name("MAGY");
+  MagZ.Name("MAGZ");
+  
+  MotorX.Name("MOTORX");
+  MotorX.Name("MOTORY");
+  MotorX.Name("MOTORZ");
+  
+  TempX1.Name("TEMPX1");
+  TempX2.Name("TEMPX2");
+  TempY1.Name("TEMPY1");
+  TempY2.Name("TEMPY2");
+  TempZ1.Name("TEMPZ1");
+  TempZ2.Name("TEMPZ2");
+  IRX1.config(IRARRAY_ADDRESS_X1,&Wire);
+  IRX2.config(IRARRAY_ADDRESS_X2,&Wire);
+  IRY1.config(IRARRAY_ADDRESS_Y1,&Wire);
+  IRY2.config(IRARRAY_ADDRESS_Y2,&Wire);
+  IRZ1.config(IRARRAY_ADDRESS_Z1,&Wire);
+  IRZ2.config(IRARRAY_ADDRESS_Z2,&Wire);
 
-    SysMap["IMU"]=&IMUI2C;
- //   SysMap["IRX1"]=&IRX1;     
- 
-    addSystem("RADIO",&Radio,Core);  
- // addSystem("RADIO2",&Radio2,Core);     
-  addSystem("POWER",&Power,Core);
- // addSystem("PHONE",&Phone,normal);
-    addSystem("Mgr",&Mgr,Core);
+  TempX1.config(0x48,&Wire);
+  TempX2.config(0x49,&Wire);
+  TempY1.config(0x48,&Wire);
+  TempY2.config(0x49,&Wire);
+  TempZ1.config(0x48,&Wire);
+  TempZ2.config(0x49,&Wire);
+  MagX.config(0x49,&Wire);
+  MagY.config(0x49,&Wire1);
+  MagZ.config(0x48,&Wire1);
 
-    addSystem("MT",&MT,detumble);
-    addSystem("RW",&RW,adcs);
-
-
+ // normal.addSystem(&IRX1);
+      normal.addSystem(&IR);
+    normal.addSystem(&IRX1);
+    normal.addSystem(&IRX2);
+    normal.addSystem(&IRY1);
+    normal.addSystem(&IRY2);
+    normal.addSystem(&IRZ1);
+    normal.addSystem(&IRZ2);
 
 /*
+   normal.addSystem(&IRX1);
+    normal.addSystem(&Example);    
+      
+ 
+ //   detumble.addSystem(&IMUI2C);   
+ //   detumble.addSystem(&IMUSPI);   
+      
+  //  normal.addSystem(&Temperature);  
+  //  normal.addSystem(&TempX1);     
+  //  normal.addSystem(&TempX2);     
+  //  normal.addSystem(&TempY1);     
+  //  normal.addSystem(&TempY2);     
+  //  normal.addSystem(&TempZ1);     
+  //  normal.addSystem(&TempZ2);     
   
-    MotorX.config("RWX",RW_SIG_X,RW_FG_X,RW_DIR_X);
-    MotorY.config("RWY",RW_SIG_Y,RW_FG_Y,RW_DIR_Y);
-    MotorZ.config("RWZ",RW_SIG_Z,RW_FG_Z,RW_DIR_Z);
-  
-    IRX1.config("IRX1",IRARRAY_ADDRESS_X1,'0');
-    IRX2.config("IRX2",IRARRAY_ADDRESS_X2,'0');
-    IRY1.config("IRY1",IRARRAY_ADDRESS_Y1,'0');
-    IRY2.config("IRY2",IRARRAY_ADDRESS_Y2,'0');
-    IRZ1.config("IRZ1",IRARRAY_ADDRESS_Z1,'0');
-    IRZ2.config("IRZ2",IRARRAY_ADDRESS_Z2,'0');
-   
-    MAGX.config("MAGX",ADDRESS_MAGX,'0');
-    MAGY.config("MAGY",ADDRESS_MAGY,'0');
-    MAGZ.config("MAGZ",ADDRESS_MAGZ,'0');   
-*/
-  
-  //TempX1.config("TEMPX1",TEMP_X1,'0');
-  //TempX2.config("TEMPX2",TEMP_X2,'0');
-  //TempY1.config("TEMPY1",TEMP_Y1,'0');
-  //TempY2.config("TEMPY2",TEMP_Y2,'0');
-  //TempZ1.config("TEMPZ1",TEMP_Z1,'0');
-  //TempZ2.config("TEMPZ2",TEMP_Z2,'0');
-  //TempOBC.config("TEMPOBC",TEMP_OBC,'0');
-  
+    detumble.addSystem(&MT);
+    detumble.addSystem(&MagX);
+    detumble.addSystem(&MagY);
+    detumble.addSystem(&MagZ);
+    
+    adcs.addSystem(&RW);
+ // adcs.addSystem(&IMUI2C);   
+ // adcs.addSystem(&IMUSPI);
+    adcs.addSystem(&MotorX);
+    adcs.addSystem(&MotorY);
+    adcs.addSystem(&MotorZ);
+    phone.addSystem(&Phone);
+ 
 
-   Core.setup();
+
+
+// Core.addSystem(&Radio2);
+// Core.addSystem(&Power);
+   Core.setup();  
+  
+  CMsg msg;
+  msg.setSYS("MGR");
+  msg.setACT("CMD_GPS_OUTPUT");   
+// Mgr.addMessageList(msg);
+
+  msg.setSYS("MGR");
+  msg.setACT("CMD_IRX1_OUTPUT");   
+//  Mgr.addMessageList(msg);
+
+  msg.setSYS("MGR");
+  msg.setACT("SHOWCOMMANDS");   
+// Mgr.addMessageList(msg);
+
+  msg.setSYS("SYSTEMMGR");
+  msg.setACT("I2C1");
+  Mgr.addMessageList(msg);
+
+  msg.setSYS("EXAMPLE");
+  msg.setACT("START");
+  Mgr.addMessageList(msg);
+*/
+
 }
 
 
 void CSatellite::MsgPump() {
 	//Gets messages receieved from radio, pushes to message list and then pumps them out
-
 	MSG.moveReceived();
-  for (auto  it:MSG.MessagesList) {
-	
+  for (auto  it:MSG.MessagesList) {	
     CMsg msg = it;
     
     newMsg(msg);   //Satellite
     Core.newMsg(msg);   //Core
-		pstate->newMsg(msg);   //Current State
+    if(msg.getParameter("PROCESSED","")=="1"){
+      writeconsoleln("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      writeconsoleln(msg.getParameter("PROCESSED",""));
+      writeconsoleln("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      continue;
+    }
+	  pstate->newMsg(msg);   //Current State
 	}
 
 	MSG.MessagesList.clear();//Probable make sure messages have all been processed.  I think they will as only thing that can add messages should be the loop
 }
-
-
- void CSatellite::addSystem(const char *str,CSystemObject* psys,  CStateObj &state){
-
-      std::string sysname=str;
-      state.subsystems.push_back(psys);    
-   
- }

@@ -1,70 +1,99 @@
 #include "cubesat.h"
 #include "satwatchdog.h"
 
-
 #include <map>
 #include <list>
 #include <bitset>
 
 
-
-
-
 ////////////////////////  DONT WRITE TO SERIAL PORT BEFORE ITS DECLARED  -----   NO WRITING TO CONSOLE IN CONSTRUCTORS OF SYSTEMS THAT ARE BELOW ----------------------////////////////////////////////////////////////
 ////////////////////////REACTIONWHEEL #include <mbed.h>  IS CAUSE OF SPI ISSUES ---- Never include that!  ////////////////////////////////
 
-//Prefill the default states  Ex.  Detumble state should have detumble as a system.  DeployAntenna state should have deploy logic in it
-
+std::map<std::string,CSystemObject *> SysMap;
 
 CSatWatchdog satdog;
 CSatellite sat;
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
+  TwoWire mWire2(I2C_SDA2,I2C_SCL2); 
+#else
+  #define mWire2 Wire
+#endif  
 
-
+std::string CSystemObject::_sat="ADR1";
 CMessages* getMessages() { return &sat.MSG; }
-CSystemObject *getSystem(const char *sys){ return sat.SysMap[sys]; }   //Due to polymorphism, will return whatever system you want
 CSatellite* getSatellite() { return &sat; }
+TwoWire *getWire2(){return &mWire2;};
+
+void transmitError(const char *tmp){
+  writeconsole("Critical Error: ");  writeconsoleln(tmp);
+  CMsg msg;
+  msg.setACT("TRANSMITDATA");
+  msg.Parameters["ERROR"]=tmp;    
+  sat.MSG.newMessage(msg);  
+}
 
 
 void setup() { // leave empty 
+  Serial.begin(115200);
+  while (!Serial);
   #ifdef MYESP32
 //  esp_task_wdt_init(WDT_TIMEOUT, true); //enable panic so ESP32 restarts
 //  esp_task_wdt_add(NULL); //add current thread to WDT watch
   #endif
-
-
   }
 
-
-
-void mysetup() {  //init here
-  Serial.begin(115200);
+void mysetup() {   
   satdog.setup();
   
-  while (!Serial&&(getTime()<15000))  ;
+ // while (!Serial&&(getTime()<15000))  ;
   writeconsoleln("Starting...");
   delay(1000);
   Wire.begin();
-  Wire.setClock(400000); //Increase I2C clock speed to 400kHz
-  delay(1000);
+  Wire.setClock(400000); 
+  delay(1000);  
   
-  
-  sat.setup();        
+  sat.setup();     
+       
 } 
- 
 
+void loop1() {
+  Serial.println(".");
+
+  
+}
 
 //Check to make sure time isnt getting too big and overflows (~50days), reset
-
 void loop() {  
   mysetup(); 
   unsigned count=0;
-  while( sat.loop()){ 
+  while(1 ){ 
+    sat.loop();
     count++; 
-    if(count>50000){   //CHECKS EVERY FEW MINUTES : 5000000
-      writeconsole("WatchDog Loop!!!   State:");
+    if(count>WATCHDOG_LOOP_COUNT){   
+      writeconsoleln("");
+      writeconsole("                            WatchDog Loop!!!           State:");
       writeconsoleln(sat.pstate->Name());
       satdog.loop();    
       count=0;
+        /*
+        CMsg msg;    
+           msg.setSTATE("DETUMBLE");
+          sat.Radio.addMessageList(msg);
+        
+        if (rand()%4==0){       
+          msg.setSTATE("ADCS");
+          sat.Radio.addMessageList(msg);  
+        }
+        if (rand()%4==1){       
+          msg.setSTATE("DETUMBLE");
+          sat.Radio.addMessageList(msg);  
+        }
+        if (rand()%4==2){       
+          msg.setSTATE("LOWPOWER");
+          sat.Radio.addMessageList(msg);  
+        }
+        */
+        
     }  
   }      
 }

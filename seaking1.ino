@@ -61,7 +61,10 @@ void mysetup() {
  // while (!Serial&&(getTime()<15000))  ;
   writeconsoleln("Starting...");
   delay(1000);
-  Wire.begin(21,22);
+  #if defined(TTGO) || defined(TTGO1)
+   Wire.begin(21,22);
+  #endif 
+  
   Wire.setClock(400000); 
   delay(1000);  
   
@@ -83,7 +86,9 @@ void loop() {
     if(count>4*WATCHDOG_LOOP_COUNT){  
       CMsg m;
       m.setSYS("Main"); 
+        #if defined(TTGO) || defined(TTGO1)
       m.setParameter("FREEHEAP",(long)ESP.getFreeHeap());
+      #endif
       satdog.loop();    
       count=0;        
       writeconsoleln(m.serializeout());

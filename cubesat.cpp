@@ -59,6 +59,11 @@ void CSatellite::newMsg(CMsg &msg) {
     if(act=="MESSAGESLISTCLEAR") MSG.MessageList.clear();
     if(act=="TRANSMITLISTCLEAR") MSG.TransmitList.clear();
     if(act=="TRANSMITTEDLISTCLEAR") MSG.TransmittedList.clear();
+    if(act=="SENDDATA") MSG.sendData(msg);
+    if(act=="SUBSCRIBE") MSG.subscribe(msg.getDATA());
+    if(act=="UNSUBSCRIBE") MSG.unsubscribe(msg.getDATA());
+  
+    
     if((act=="NORMAL") ||(act=="LOWPOWER") ||(act=="DEPLOY") ||(act=="DETUMBLE") ||(act=="ADCS")||(act=="PHONE"))
       newState(msg);
   } 

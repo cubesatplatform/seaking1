@@ -76,11 +76,9 @@ class CSatellite:public CSystemObject {
   CMotorController MotorZ;
 
   CSatPins SatPins;
-
-  CTempMaster Temperature;
+  
   CTemperatureObject TempX1,TempX2,TempY1,TempY2,TempZ1,TempZ2;
 
-  CIRMaster IR;
   CIRArray IRX1,IRX2,IRY1,IRY2,IRZ1,IRZ2;
   
   CStateObj* pstate;

@@ -36,6 +36,7 @@ class CSatellite:public CSystemObject {
   public:
 	std::list<CSystemObject*> coresystems;
 
+  int _restartcount=0;
 	unsigned long lcount=0;
   CCoreState Core;
  
@@ -77,7 +78,7 @@ class CSatellite:public CSystemObject {
 
   CSatPins SatPins;
   
-  CTemperatureObject TempX1,TempX2,TempY1,TempY2,TempZ1,TempZ2;
+  CTemperatureObject TempX1,TempX2,TempY1,TempY2,TempZ1,TempZ2, TempOBC, TempADCS;
 
   CIRArray IRX1,IRX2,IRY1,IRY2,IRZ1,IRZ2;
   
@@ -91,6 +92,7 @@ class CSatellite:public CSystemObject {
   void newMsg(CMsg &msg);
  
 	void setup();  
+  void readCounts();
 	void loop();
 	void stats();
 	void MsgPump();

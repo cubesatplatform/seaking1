@@ -1,5 +1,5 @@
 #include "cubesat.h"
-
+#include <portentafs.h>
 
 void CSatellite::loop() {   
     MsgPump();  
@@ -52,8 +52,10 @@ void CSatellite::newMsg(CMsg &msg) {
   std::string act=msg.getACT();
 
   if(sys=="SAT") {    
+    
     if(act=="STATS") stats();
     if(act=="RESET") resetFunc();
+    if(act=="COUNTS") readCounts();
     if(act=="TRANSMITDATA") MSG.movetoTransmitList(msg);
     if(act=="DATALISTCLEAR") MSG.DataList.clear();
     if(act=="MESSAGESLISTCLEAR") MSG.MessageList.clear();
@@ -62,10 +64,10 @@ void CSatellite::newMsg(CMsg &msg) {
     if(act=="SENDDATA") MSG.sendData(msg);
     if(act=="SUBSCRIBE") MSG.subscribe(msg.getDATA());
     if(act=="UNSUBSCRIBE") MSG.unsubscribe(msg.getDATA());
-  
-    
-    if((act=="NORMAL") ||(act=="LOWPOWER") ||(act=="DEPLOY") ||(act=="DETUMBLE") ||(act=="ADCS")||(act=="PHONE"))
+     
+    if((act=="NORMAL") ||(act=="LOWPOWER") ||(act=="DEPLOY") ||(act=="DETUMBLE") ||(act=="ADCS")||(act=="PHONE")){
       newState(msg);
+    }
   } 
     else{
     CSystemObject *psys=getSystem(sys.c_str(),"CSatellite::newMsg(CMsg &msg)");
@@ -85,6 +87,9 @@ void CSatellite::stats(){
 void CSatellite::setup() {    //Anything not in a loop must be setup manually  or have setup done automatically when called
   Core.addSystem(&Radio);
   Core.addSystem(&Mgr);  
+
+  IMUI2C.Name("IMUI2C");   
+  IMUSPI.Name("IMUSPI");
   IRX1.Name("IRX1");
   IRX2.Name("IRX2");
   IRY1.Name("IRY1");
@@ -106,23 +111,32 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   TempY2.Name("TEMPY2");
   TempZ1.Name("TEMPZ1");
   TempZ2.Name("TEMPZ2");
+  TempOBC.Name("TEMPOBC");
+  TempADCS.Name("TEMPADCS");
+
+  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)    
+
+    
   IRX1.config(IRARRAY_ADDRESS_X1,&Wire);
   IRX2.config(IRARRAY_ADDRESS_X2,&Wire);
-  IRY1.config(IRARRAY_ADDRESS_Y1,&Wire);
-  IRY2.config(IRARRAY_ADDRESS_Y2,&Wire);
-  IRZ1.config(IRARRAY_ADDRESS_Z1,&Wire);
-  IRZ2.config(IRARRAY_ADDRESS_Z2,&Wire);
+  IRY1.config(IRARRAY_ADDRESS_Y1,&Wire1);
+  IRY2.config(IRARRAY_ADDRESS_Y2,&Wire1);
+  IRZ1.config(IRARRAY_ADDRESS_Z1,getWire2());
+  IRZ2.config(IRARRAY_ADDRESS_Z2,getWire2());
 
-  TempX1.config(0x48,&Wire);
-  TempX2.config(0x49,&Wire);
-  TempY1.config(0x48,&Wire);
-  TempY2.config(0x49,&Wire);
-  TempZ1.config(0x48,&Wire);
-  TempZ2.config(0x49,&Wire);
-  MagX.config(0x49,&Wire);
-  MagY.config(0x49,&Wire1);
-  MagZ.config(0x48,&Wire1);
-
+  TempOBC.config(TEMP_OBC,&Wire);
+  TempADCS.config(TEMP_ADCS,&Wire);
+  TempX1.config(TEMP_X1,&Wire);
+  TempX2.config(TEMP_X2,&Wire);
+  TempY1.config(TEMP_Y1,&Wire1);
+  TempY2.config(TEMP_Y1,&Wire1);
+  TempZ1.config(TEMP_Z1,getWire2());
+  TempZ2.config(TEMP_Z2,getWire2());
+    
+  MagX.config(MAG_ADDRESS_X,getWire2());  
+  MagY.config(MAG_ADDRESS_Y,getWire2());  
+  MagZ.config(MAG_ADDRESS_Z,getWire2());
+  #endif
  // normal.addSystem(&IRX1);
  /*
       normal.addSystem(&IR);
@@ -185,36 +199,74 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   msg.setSYS("SYSTEMMGR");
   msg.setACT("I2C1");
   Mgr.addMessageList(msg);
-
+  CMsg msg;
   msg.setSYS("EXAMPLE");
   msg.setACT("START");
   Mgr.addMessageList(msg);
 */
 
+
+  readCounts();
+  
 }
+
+
+void CSatellite::readCounts() {
+  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)    
+  if(1){
+     CFS fs;    
+     deployantenna._burncount=fs.readFile();    
+  }
+  if(1){
+     CFS fs;
+     fs.setFilename(DETUMBLE_FILE);
+     detumble._detumblecount=fs.readFile();      
+  }
+  if(1){
+     CFS fs;  
+     fs.setFilename(RS_FILE);
+     _restartcount=fs.readFile();     
+     _restartcount++;
+     fs.deleteFile(); 
+     fs.writeFile(_restartcount);    
+  }
+
+  
+  CMsg msg;
+  msg.setTABLE("INFO");
+  msg.setParameter("RESTARTS",_restartcount);
+  msg.setParameter("BURNS",deployantenna._burncount);
+  msg.setParameter("DETUMBLES",detumble._detumblecount);
+  
+  Mgr.addTransmitList(msg);   
+  #endif
+}
+
+
+
 
 
 void CSatellite::MsgPump() {
 	//Gets messages receieved from radio, pushes to message list and then pumps them out
   CMsg msg;
 	MSG.moveReceived();
-
-  for(int count=0;count<20;count++){  
-    msg = MSG.MessageList.front();
+  int count=0;
+  while(  MSG.MessageList.size()){
+    count++;
+    if(count>20)
+      break;
+    msg = MSG.MessageList.back();
+    MSG.MessageList.pop_back();
     if(msg.Parameters.size()){
-      MSG.MessageList.pop_front();
-
+      
       newMsg(msg);   //Satellite
       Core.newMsg(msg);   //Core
       if(msg.getParameter("PROCESSED","")=="1"){
         writeconsole(msg.getParameter("PROCESSED",""));writeconsoleln("______________________  CSatellite::MsgPump Processed  _______________________");
         continue;
       }
-
   	  pstate->newMsg(msg);   //Current State      
     }
-    else
-      break;
 	}
 
 	MSG.MessageList.clear();//Probable make sure messages have all been processed.  I think they will as only thing that can add messages should be the loop

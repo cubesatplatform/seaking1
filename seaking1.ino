@@ -17,19 +17,21 @@
 std::map<std::string,CSystemObject *> SysMap;
 std::map<std::string, PinName> Pins;
 std::map<std::string, PinName> pwmPins;
+std::map<std::string, std::string> I2CMap;
 
 CSatWatchdog satdog;
 CSatellite sat;
 #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
   TwoWire mWire2(I2C_SDA2,I2C_SCL2); 
+  TwoWire *getWire2(){return &mWire2;};
 #else
-  #define mWire2 Wire
+  #define mWire2 Wire;
 #endif  
 
 std::string CSystemObject::_sat="ADR1";
 CMessages* getMessages() { return &sat.MSG; }
 CSatellite* getSatellite() { return &sat; }
-TwoWire *getWire2(){return &mWire2;};
+
 
 void transmitError(const char *tmp){
   writeconsole("Critical Error: ");  writeconsoleln(tmp);
@@ -37,8 +39,8 @@ void transmitError(const char *tmp){
   msg.setACT("TRANSMITDATA");
   msg.Parameters["ERROR"]=tmp;    
 
-  sat.MSG.TransmitList.push_back(msg);  
-}
+  sat.MSG.TransmitList.push_back(msg); 
+} 
 
 
 void setup() { // leave empty 
@@ -52,6 +54,12 @@ void setup() { // leave empty
   #ifdef MYESP32
 //  esp_task_wdt_init(WDT_TIMEOUT, true); //enable panic so ESP32 restarts
 //  esp_task_wdt_add(NULL); //add current thread to WDT watch
+  #endif
+  #if defined(PORTENTA_E22_900M30S) || defined(PORTENTA_E22_400M30S)
+  //Super IMPORTANT  Initialize SPIs so not floating!!!!
+  digitalWrite(PC_13,HIGH);
+  digitalWrite(PI_4,HIGH);
+  digitalWrite(PJ_8,HIGH);
   #endif
   }
 
@@ -86,7 +94,7 @@ void loop() {
     if(count>4*WATCHDOG_LOOP_COUNT){  
       CMsg m;
       m.setSYS("Main"); 
-        #if defined(TTGO) || defined(TTGO1)
+      #if defined(TTGO) || defined(TTGO1)
       m.setParameter("FREEHEAP",(long)ESP.getFreeHeap());
       #endif
       satdog.loop();    

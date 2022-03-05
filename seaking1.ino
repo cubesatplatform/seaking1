@@ -55,11 +55,12 @@ void setup() { // leave empty
 //  esp_task_wdt_init(WDT_TIMEOUT, true); //enable panic so ESP32 restarts
 //  esp_task_wdt_add(NULL); //add current thread to WDT watch
   #endif
-  #if defined(PORTENTA_E22_900M30S) || defined(PORTENTA_E22_400M30S)
+  #if defined(PORTENTA_E22_900M30S) || defined(PORTENTA_E22_400M30S)  
   //Super IMPORTANT  Initialize SPIs so not floating!!!!
   digitalWrite(PC_13,HIGH);
   digitalWrite(PI_4,HIGH);
   digitalWrite(PJ_8,HIGH);
+  mbed_reset_reboot_count();
   #endif
   }
 
@@ -87,13 +88,17 @@ void loop1() {
 void loop() {  
   mysetup(); 
   unsigned count=0;
+  CMsg msg;
+  msg.setSYS("BASE");
+  msg.setACT("Hello");   
+  sat.addTransmitList(msg);
 
   while(1){   
     sat.loop();  
     count++; 
     if(count>4*WATCHDOG_LOOP_COUNT){  
       CMsg m;
-      m.setSYS("Main"); 
+      m.setSYS(sat.pstate->Name()); 
       #if defined(TTGO) || defined(TTGO1)
       m.setParameter("FREEHEAP",(long)ESP.getFreeHeap());
       #endif

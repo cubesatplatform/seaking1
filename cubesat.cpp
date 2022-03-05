@@ -3,13 +3,13 @@
 
 void CSatellite::loop() {   
     MsgPump();  
-    Core.loop();   
+    state_core.loop();   
     pstate->loop();     
   }
 
 CSatellite::CSatellite() {
   Name("SAT");
-	pstate = &normal;
+	pstate = &state_normal;
 	}
 
 
@@ -17,12 +17,12 @@ void CSatellite::newState(CMsg &msg) {
     std::string s=msg.getACT();
     if(s.size()>1){
       CStateObj *tmpstate=pstate;
-      if (s == "LOWPOWER")  tmpstate = &lowpower;
-      if (s == "NORMAL")  tmpstate = &normal;
-      if (s == "DEPLOY")  tmpstate = &deployantenna;
-      if (s == "ADCS")  tmpstate = &adcs;
-      if (s == "DETUMBLE")  tmpstate = &detumble;
-      if (s == "PHONE")  tmpstate = &phone;
+      if (s == "LOWPOWER")  tmpstate = &state_lowpower;
+      if (s == "NORMAL")  tmpstate = &state_normal;
+      if (s == "DEPLOY")  tmpstate = &state_deployantenna;
+      if (s == "ADCS")  tmpstate = &state_adcs;
+      if (s == "DETUMBLE")  tmpstate = &state_detumble;
+      if (s == "PHONE")  tmpstate = &state_phone;
 
 
       if(tmpstate!=pstate){  //Don't reset if you are already in that state        
@@ -81,12 +81,13 @@ void CSatellite::newMsg(CMsg &msg) {
 
 void CSatellite::stats(){
   pstate->stats();  
-  Core.stats();  
+  state_core.stats();  
 }
 
 void CSatellite::setup() {    //Anything not in a loop must be setup manually  or have setup done automatically when called
-  Core.addSystem(&Radio);
-  Core.addSystem(&Mgr);  
+  state_core.addSystem(&Radio);
+  state_core.addSystem(&Mgr);  
+  state_phone.addSystem(&Phone);  
 
   IMUI2C.Name("IMUI2C");   
   IMUSPI.Name("IMUSPI");
@@ -102,8 +103,13 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   MagZ.Name("MAGZ");
   
   MotorX.Name("MOTORX");
-  MotorX.Name("MOTORY");
-  MotorX.Name("MOTORZ");
+  MotorY.Name("MOTORY");
+  MotorZ.Name("MOTORZ");
+
+  MotorX.config(MOTOR_X_SPEED,MOTOR_X_FG,MOTOR_X_DIR);
+  MotorY.config(MOTOR_Y_SPEED,MOTOR_Y_FG,MOTOR_Y_DIR);
+  MotorZ.config(MOTOR_Z_SPEED,MOTOR_Z_FG,MOTOR_Z_DIR);
+
   
   TempX1.Name("TEMPX1");
   TempX2.Name("TEMPX2");
@@ -137,51 +143,51 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   MagY.config(MAG_ADDRESS_Y,getWire2());  
   MagZ.config(MAG_ADDRESS_Z,getWire2());
   #endif
- // normal.addSystem(&IRX1);
+ // state_normal.addSystem(&IRX1);
  /*
-      normal.addSystem(&IR);
-    normal.addSystem(&IRX1);
-    normal.addSystem(&IRX2);
-    normal.addSystem(&IRY1);
-    normal.addSystem(&IRY2);
-    normal.addSystem(&IRZ1);
-    normal.addSystem(&IRZ2);
+      state_normal.addSystem(&IR);
+    state_normal.addSystem(&IRX1);
+    state_normal.addSystem(&IRX2);
+    state_normal.addSystem(&IRY1);
+    state_normal.addSystem(&IRY2);
+    state_normal.addSystem(&IRZ1);
+    state_normal.addSystem(&IRZ2);
 
 
-   normal.addSystem(&IRX1);
-    normal.addSystem(&Example);    
+    state_normal.addSystem(&IRX1);
+    state_normal.addSystem(&Example);    
       
  
- //   detumble.addSystem(&IMUI2C);   
- //   detumble.addSystem(&IMUSPI);   
+ //   state_detumble.addSystem(&IMUI2C);   
+ //   state_detumble.addSystem(&IMUSPI);   
       
-  //  normal.addSystem(&Temperature);  
-  //  normal.addSystem(&TempX1);     
-  //  normal.addSystem(&TempX2);     
-  //  normal.addSystem(&TempY1);     
-  //  normal.addSystem(&TempY2);     
-  //  normal.addSystem(&TempZ1);     
-  //  normal.addSystem(&TempZ2);     
+  //  state_normal.addSystem(&Temperature);  
+  //  state_normal.addSystem(&TempX1);     
+  //  state_normal.addSystem(&TempX2);     
+  //  state_normal.addSystem(&TempY1);     
+  //  state_normal.addSystem(&TempY2);     
+  //  state_normal.addSystem(&TempZ1);     
+  //  state_normal.addSystem(&TempZ2);     
   
-    detumble.addSystem(&MT);
-    detumble.addSystem(&MagX);
-    detumble.addSystem(&MagY);
-    detumble.addSystem(&MagZ);
+    state_detumble.addSystem(&MT);
+    state_detumble.addSystem(&MagX);
+    state_detumble.addSystem(&MagY);
+    state_detumble.addSystem(&MagZ);
     
-    adcs.addSystem(&RW);
- // adcs.addSystem(&IMUI2C);   
- // adcs.addSystem(&IMUSPI);
-    adcs.addSystem(&MotorX);
-    adcs.addSystem(&MotorY);
-    adcs.addSystem(&MotorZ);
-    phone.addSystem(&Phone);
+    state_adcs.addSystem(&RW);
+ // state_adcs.addSystem(&IMUI2C);   
+ // state_adcs.addSystem(&IMUSPI);
+    state_adcs.addSystem(&MotorX);
+    state_adcs.addSystem(&MotorY);
+    state_adcs.addSystem(&MotorZ);
+    state_phone.addSystem(&Phone);
  
 
 
 
-// Core.addSystem(&Radio2);
-// Core.addSystem(&Power);
-   Core.setup();  
+// state_core.addSystem(&Radio2);
+// state_core.addSystem(&Power);
+   state_core.setup();  
   
   CMsg msg;
   msg.setSYS("MGR");
@@ -215,12 +221,12 @@ void CSatellite::readCounts() {
   #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)    
   if(1){
      CFS fs;    
-     deployantenna._burncount=fs.readFile();    
+     state_deployantenna._burncount=fs.readFile();    
   }
   if(1){
      CFS fs;
      fs.setFilename(DETUMBLE_FILE);
-     detumble._detumblecount=fs.readFile();      
+     state_detumble._detumblecount=fs.readFile();      
   }
   if(1){
      CFS fs;  
@@ -235,8 +241,8 @@ void CSatellite::readCounts() {
   CMsg msg;
   msg.setTABLE("INFO");
   msg.setParameter("RESTARTS",_restartcount);
-  msg.setParameter("BURNS",deployantenna._burncount);
-  msg.setParameter("DETUMBLES",detumble._detumblecount);
+  msg.setParameter("BURNS",state_deployantenna._burncount);
+  msg.setParameter("DETUMBLES",state_detumble._detumblecount);
   
   Mgr.addTransmitList(msg);   
   #endif
@@ -260,7 +266,7 @@ void CSatellite::MsgPump() {
     if(msg.Parameters.size()){
       
       newMsg(msg);   //Satellite
-      Core.newMsg(msg);   //Core
+      state_core.newMsg(msg);   //core
       if(msg.getParameter("PROCESSED","")=="1"){
         writeconsole(msg.getParameter("PROCESSED",""));writeconsoleln("______________________  CSatellite::MsgPump Processed  _______________________");
         continue;

@@ -5,7 +5,7 @@
 CExample::CExample(){
   Name("EXAMPLE");
   setInterval(3000);
-  Forever(true);
+  setForever(true);
 }
 
 void CExample::setup(){
@@ -13,9 +13,7 @@ void CExample::setup(){
 }
 
 void CExample::loop(){
-  CMsg m;
-
-  
+  CMsg m;  
   m.setSYS("IRX1");
   m.setACT("RUNONCE");
   m.setParameter("OUTPUT","D");

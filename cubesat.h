@@ -38,15 +38,14 @@ class CSatellite:public CSystemObject {
 
   int _restartcount=0;
 	unsigned long lcount=0;
-  CCoreState Core;
+  CCoreState state_core;
  
-  CDetumbleState detumble;
-	CLowPowerState lowpower;   //0
-	CNormalState normal;        //1
-	CDeployAntennaState deployantenna;   //2
-	CADCSState adcs;   //3
-
-  CPhoneState phone;
+  CDetumbleState state_detumble;
+	CLowPowerState state_lowpower;   //0
+	CNormalState state_normal;        //1
+	CDeployAntennaState state_deployantenna;   //2
+	CADCSState state_adcs;   //3
+  CPhoneState state_phone;
 
 #if !(defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7))
    CGPS gps;
@@ -66,7 +65,6 @@ class CSatellite:public CSystemObject {
 
   //CRadio Radio2; 
   CPhone Phone;  
-
   
   CMDrive MagX;
   CMDrive MagY;

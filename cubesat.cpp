@@ -121,7 +121,6 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   TempADCS.Name("TEMPADCS");
 
   #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)    
-
     
   IRX1.config(IRARRAY_ADDRESS_X1,&Wire);
   IRX2.config(IRARRAY_ADDRESS_X2,&Wire);
@@ -135,7 +134,7 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   TempX1.config(TEMP_X1,&Wire);
   TempX2.config(TEMP_X2,&Wire);
   TempY1.config(TEMP_Y1,&Wire1);
-  TempY2.config(TEMP_Y1,&Wire1);
+  TempY2.config(TEMP_Y2,&Wire1);
   TempZ1.config(TEMP_Z1,getWire2());
   TempZ2.config(TEMP_Z2,getWire2());
     

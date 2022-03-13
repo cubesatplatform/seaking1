@@ -23,7 +23,7 @@ CSatWatchdog satdog;
 CSatellite sat;
 #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
   TwoWire mWire2(I2C_SDA2,I2C_SCL2); 
-  TwoWire *getWire2(){return &mWire2;};
+  TwoWire *getWire2(){mWire2.begin();return &mWire2;};
 #else
   #define mWire2 Wire;
 #endif  
@@ -47,6 +47,9 @@ void setup() { // leave empty
   
   Serial.begin(115200);
   while (!Serial);
+  Wire.begin();                                             //NEED to turn I2C ON   Otherwise CRASH
+  Wire1.begin();
+  mWire2.begin();
   
   #ifdef TTGO1
    initBoard();   

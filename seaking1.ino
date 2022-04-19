@@ -31,6 +31,8 @@ CSatellite sat;
 std::string CSystemObject::_sat="ADR1";
 CMessages* getMessages() { return &sat.MSG; }
 CSatellite* getSatellite() { return &sat; }
+std::string getSatState() { return sat.pstate->Name(); }
+
 
 
 void transmitError(const char *tmp){
@@ -42,11 +44,15 @@ void transmitError(const char *tmp){
   sat.MSG.TransmitList.push_back(msg); 
 } 
 
-
+ 
 void setup() { // leave empty 
   
   Serial.begin(115200);
-  while (!Serial);
+  long tt=getTime();
+  while (!Serial){
+    if(getTime()>tt+10000)
+      break;
+  }
   Wire.begin();                                             //NEED to turn I2C ON   Otherwise CRASH
   Wire1.begin();
   mWire2.begin();

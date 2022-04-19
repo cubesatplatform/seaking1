@@ -57,13 +57,14 @@ class CSatellite:public CSystemObject {
 
   CEPS Power;
   CRadio Radio; 
+  CRadio Radio2; 
   CIMU IMUI2C;   
   CIMU IMUSPI;
   
   CRW RW;
   CMagTorquer MT;
 
-  //CRadio Radio2; 
+
   CPhone Phone;  
   
   CMDrive MagX;
@@ -94,6 +95,7 @@ class CSatellite:public CSystemObject {
 	void loop();
 	void stats();
 	void MsgPump();
+  void updateRadios(CMsg &msg);
 };
 
 CSatellite* getSatellite();

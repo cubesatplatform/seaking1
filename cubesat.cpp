@@ -5,6 +5,8 @@ void CSatellite::loop() {
     MsgPump();  
     state_core.loop();   
     pstate->loop();     
+    if(pstate->outOfTime())
+      goLowPowerState();
   }
 
 CSatellite::CSatellite() {
@@ -64,6 +66,7 @@ void CSatellite::newMsg(CMsg &msg) {
     if(act=="SENDDATA") MSG.sendData(msg);
     if(act=="SUBSCRIBE") MSG.subscribe(msg.getDATA());
     if(act=="UNSUBSCRIBE") MSG.unsubscribe(msg.getDATA());
+    if(act=="UPDATERADIOS") updateRadios(msg);
      
     if((act=="NORMAL") ||(act=="LOWPOWER") ||(act=="DEPLOY") ||(act=="DETUMBLE") ||(act=="ADCS")||(act=="PHONE")){
       newState(msg);
@@ -85,12 +88,24 @@ void CSatellite::stats(){
 }
 
 void CSatellite::setup() {    //Anything not in a loop must be setup manually  or have setup done automatically when called
+  Radio.Name("RADIO");
+  Radio.setTransmitter(true);
+  Radio2.Name("RADIO2");
+  Radio2.setTransmitter(false);
+
+  
   state_core.addSystem(&Radio);
+  state_core.addSystem(&Radio2);
   state_core.addSystem(&Mgr);  
+  //state_core.addSystem(&RW);    //RW needs to be in core because if you are running it you cant switch states and turn it off
   state_phone.addSystem(&Phone);  
 
   IMUI2C.Name("IMUI2C");   
   IMUSPI.Name("IMUSPI");
+
+  IMUI2C.remap();
+  IMUSPI.remap();
+  
   IRX1.Name("IRX1");
   IRX2.Name("IRX2");
   IRY1.Name("IRY1");
@@ -156,7 +171,9 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
     state_normal.addSystem(&IRX1);
     state_normal.addSystem(&Example);    
       
- 
+ //   state_normal.addSystem(&IMUI2C);   
+ //   state_normal.addSystem(&IMUSPI);   
+      
  //   state_detumble.addSystem(&IMUI2C);   
  //   state_detumble.addSystem(&IMUSPI);   
       
@@ -169,19 +186,20 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   //  state_normal.addSystem(&TempZ2);     
   
     state_detumble.addSystem(&MT);
-    state_detumble.addSystem(&MagX);
-    state_detumble.addSystem(&MagY);
-    state_detumble.addSystem(&MagZ);
+ 
     
     state_adcs.addSystem(&RW);
+    state_adcs.addSystem(&MagX);
+    state_adcs.addSystem(&MagY);
+    state_adcs.addSystem(&MagZ);
  // state_adcs.addSystem(&IMUI2C);   
  // state_adcs.addSystem(&IMUSPI);
     state_adcs.addSystem(&MotorX);
     state_adcs.addSystem(&MotorY);
     state_adcs.addSystem(&MotorZ);
+    
     state_phone.addSystem(&Phone);
  
-
 
 
 // state_core.addSystem(&Radio2);
@@ -275,4 +293,17 @@ void CSatellite::MsgPump() {
 	}
 
 	MSG.MessageList.clear();//Probable make sure messages have all been processed.  I think they will as only thing that can add messages should be the loop
+}
+
+
+void CSatellite::updateRadios(CMsg &msg){
+    std::string radioname=msg.getParameter("TRANSMITTER","");
+    if(radioname=="RADIO") {
+        Radio.setTransmitter(true);
+        Radio2.setTransmitter(false);
+    }
+    if(radioname=="RADIO2") {
+        Radio2.setTransmitter(true);
+        Radio.setTransmitter(false);
+    }    
 }

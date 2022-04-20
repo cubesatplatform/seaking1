@@ -93,7 +93,7 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   Radio2.Name("RADIO2");
   Radio2.setTransmitter(false);
 
-  
+  state_lowpower.addSystem(&Delay);
   state_core.addSystem(&Radio);
   state_core.addSystem(&Radio2);
   state_core.addSystem(&Mgr);  
@@ -296,14 +296,29 @@ void CSatellite::MsgPump() {
 }
 
 
-void CSatellite::updateRadios(CMsg &msg){
-    std::string radioname=msg.getParameter("TRANSMITTER","");
-    if(radioname=="RADIO") {
-        Radio.setTransmitter(true);
-        Radio2.setTransmitter(false);
+void CSatellite::updateRadios(CMsg &msg){  
+    std::string transmitter=msg.getParameter("TRANSMITTER","");
+    std::string sleeper=msg.getParameter("SLEEP","");
+    writeconsoleln("updateRadios(CMsg &msg)");
+    writeconsoleln(transmitter);
+
+    if(transmitter.size()){
+      if(transmitter=="RADIO") {
+          Radio.setTransmitter(true);
+          Radio2.setTransmitter(false);
+      }
+      if(transmitter=="RADIO2") {        
+          Radio.setTransmitter(false);
+          Radio2.setTransmitter(true);
+      }    
     }
-    if(radioname=="RADIO2") {
-        Radio2.setTransmitter(true);
-        Radio.setTransmitter(false);
-    }    
+
+    if(sleeper.size()){
+      if(sleeper=="RADIO") {
+          Radio.sleep(true);        
+      }
+      if(sleeper=="RADIO2") {        
+          Radio2.sleep(true);
+      }    
+    }
 }

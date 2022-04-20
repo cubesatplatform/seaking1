@@ -10,6 +10,7 @@
 #include <state_phone.h>
 
 #include <system_imu.h>
+#include <system_delay.h>
 #include "system_irarray.h"
 #include "system_reactionwheel.h"
 #include "system_magtorquer.h"
@@ -60,6 +61,8 @@ class CSatellite:public CSystemObject {
   CRadio Radio2; 
   CIMU IMUI2C;   
   CIMU IMUSPI;
+
+  CDelay Delay;
   
   CRW RW;
   CMagTorquer MT;

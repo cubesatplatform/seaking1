@@ -1,105 +1,114 @@
 #pragma once
-#include <defs.h>
 
-#include <state_lowpower.h>
+#include "defs.h"
+#include <csfilenames.h>
+
+#include <systemmessages.h>
+#include <stateobj.h>
+
+
 #include <state_detumble.h>
-#include <state_adcs.h>
-#include <state_normal.h>
 #include <state_deployantenna.h>
-#include <state_core.h>
-#include <state_phone.h>
-
-#include <system_imu.h>
-#include <system_delay.h>
-#include "system_irarray.h"
-#include "system_reactionwheel.h"
-#include "system_magtorquer.h"
-#include "system_temperature.h"
-#include "radio.h"
-#include "messages.h"
+#include <state_payload.h>
+#include <state_adcs.h>
+#include <state_lowpower.h>
+#include <system_reactionwheel.h>
+#include <system_magtorquer.h>
+#include <system_temperature.h>
 #include <mdrive.h>
 #include <fhmotor.h>
-#include "system_mgr.h"
-#include "phone.h"
-#include "ceps.h"
-#include "system_example.h"
-#include "system_pins.h"
+#include <system_imu.h>
+#include <radio.h>
+#include <kb.h>
 
-#if !(defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7))
-  #include "system_gps.h"
+#include <system_mgr.h>
+#include <scheduler.h>
+#include <system_irarray.h>
+#include <phone.h>
+
+
+
+#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)   
+  #include <ceps.h>  
+#else
+  #include <system_gps.h>
 #endif  
 
 
 
-#include "messages.h"
 
-class CSatellite:public CSystemObject {
-  public:
-	std::list<CSystemObject*> coresystems;
+class CSatellite:public CStateObj {
+public:
+  int _restartcount=0;  
+	long lcount=0;
 
-  int _restartcount=0;
-	unsigned long lcount=0;
-  CCoreState state_core;
+  CADCSState _state_adcs;     
+  CStateObj _state_core;
+  CDeployAntennaState _state_deployantenna;  
+  CDetumbleState _state_detumble;  
+  CLowPowerState _state_lowpower;     
+  CStateObj _state_normal;          
+  CPayloadState _state_payload;
+    
+  CKeyboard _keyboard;
+
+   
+ // CEPS _power;
+  CIMU _IMUSPI;
+  CIMU _IMUI2C;     
  
-  CDetumbleState state_detumble;
-	CLowPowerState state_lowpower;   //0
-	CNormalState state_normal;        //1
-	CDeployAntennaState state_deployantenna;   //2
-	CADCSState state_adcs;   //3
-  CPhoneState state_phone;
+  CIRArray _ir_X1,_ir_X2,_ir_Y1,_ir_Y2,_ir_Z1,_ir_Z2;
 
-#if !(defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7))
-   CGPS gps;
-#endif  
-
-  CExample Example;
-  CSystemMgr Mgr;
-
-
-  CEPS Power;
-  CRadio Radio; 
-  CRadio Radio2; 
-  CIMU IMUI2C;   
-  CIMU IMUSPI;
-
-  CDelay Delay;
   
-  CRW RW;
-  CMagTorquer MT;
-
-
-  CPhone Phone;  
+  CMagTorquer _magneTorquers;
   
-  CMDrive MagX;
-  CMDrive MagY;
-  CMDrive MagZ;
-
-  CMotorController MotorX;
-  CMotorController MotorY;
-  CMotorController MotorZ;
-
-  CSatPins SatPins;
+  CMessagesObj _messages;
   
-  CTemperatureObject TempX1,TempX2,TempY1,TempY2,TempZ1,TempZ2, TempOBC, TempADCS;
-
-  CIRArray IRX1,IRX2,IRY1,IRY2,IRZ1,IRZ2;
+  CMDrive _magX;
+  CMDrive _magY;
+  CMDrive _magZ;
   
-  CStateObj* pstate;
-	//std::bitset<10> satflag;  //initialized to 0  enum some flags HEALTHCHECK,TEMP, etc    satflag[HEALTHCHECK]
+  CSystemMgr _manager;
+/*
+  CMotorController _motorX;
+  CMotorController _motorY;
+  CMotorController _motorZ;
+*/
+  CPhone _phone;    
 
-	CMessages MSG;  
+  CRadio _radio;   
+  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7) 
+  CRadio _radio2; 
+  #else 
+    #define _radio2 _radio  
+    CGPS _gps;
+  #endif  
+
+
+  //CRW _reactionWheels;
+  
+  CScheduler _scheduler;
+  
+  CTemperatureObject _tempX1,_tempX2,_tempY1,_tempY2,_tempZ1,_tempZ2, _tempOBC;
+  
 	CSatellite();
 
-	void newState(CMsg &msg);
+	//void deleteState(CMsg &msg);
+  //void addState(CMsg &msg);
+  void createState(CMsg &msg);
+  void changeState(CMsg &msg);
+  
   void newMsg(CMsg &msg);
  
-	void setup();  
+	void setup();    
+  void loop();
   void readCounts();
-	void loop();
-	void stats();
-	void MsgPump();
-  void updateRadios(CMsg &msg);
+  void sendCounts();
+  void writeCounts();
+  void readSysMap();  
+ 
+  void updateRadios(CMsg &msg);    
+  void callCustomFunctions(CMsg &msg); 
 };
 
 CSatellite* getSatellite();
-TwoWire *getWire2();

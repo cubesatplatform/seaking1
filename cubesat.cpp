@@ -1,324 +1,255 @@
 #include "cubesat.h"
-#include <portentafs.h>
 
-void CSatellite::loop() {   
-    MsgPump();  
-    state_core.loop();   
-    pstate->loop();     
-    if(pstate->outOfTime())
-      goLowPowerState();
-  }
-
-CSatellite::CSatellite() {
-  Name("SAT");
-	pstate = &state_normal;
-	}
+CSatellite::CSatellite() {  }
 
 
-void CSatellite::newState(CMsg &msg) {    
-    std::string s=msg.getACT();
-    if(s.size()>1){
-      CStateObj *tmpstate=pstate;
-      if (s == "LOWPOWER")  tmpstate = &state_lowpower;
-      if (s == "NORMAL")  tmpstate = &state_normal;
-      if (s == "DEPLOY")  tmpstate = &state_deployantenna;
-      if (s == "ADCS")  tmpstate = &state_adcs;
-      if (s == "DETUMBLE")  tmpstate = &state_detumble;
-      if (s == "PHONE")  tmpstate = &state_phone;
-
-
-      if(tmpstate!=pstate){  //Don't reset if you are already in that state        
-        pstate->exit();
-        pstate=tmpstate;
-        pstate->stateMsg(msg);  //Passes parameters of what you want the state to do
-        pstate->enter();
-      }
-    }
-
-  }
-
-
-
-
-
-#if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
-void resetFunc(){
-  NVIC_SystemReset();
-}
-#else
-void(* resetFunc) (void) = 0; //declare reset function @ address 0
-#endif
-
-void CSatellite::newMsg(CMsg &msg) {
-  std::string sys=msg.getSYS();
-  std::string act=msg.getACT();
-
-  if(sys=="SAT") {    
-    
-    if(act=="STATS") stats();
-    if(act=="RESET") resetFunc();
-    if(act=="COUNTS") readCounts();
-    if(act=="TRANSMITDATA") MSG.movetoTransmitList(msg);
-    if(act=="DATALISTCLEAR") MSG.DataList.clear();
-    if(act=="MESSAGESLISTCLEAR") MSG.MessageList.clear();
-    if(act=="TRANSMITLISTCLEAR") MSG.TransmitList.clear();
-    if(act=="TRANSMITTEDLISTCLEAR") MSG.TransmittedList.clear();
-    if(act=="SENDDATA") MSG.sendData(msg);
-    if(act=="SUBSCRIBE") MSG.subscribe(msg.getDATA());
-    if(act=="UNSUBSCRIBE") MSG.unsubscribe(msg.getDATA());
-    if(act=="UPDATERADIOS") updateRadios(msg);
-     
-    if((act=="NORMAL") ||(act=="LOWPOWER") ||(act=="DEPLOY") ||(act=="DETUMBLE") ||(act=="ADCS")||(act=="PHONE")){
-      newState(msg);
-    }
-  } 
-    else{
-    CSystemObject *psys=getSystem(sys.c_str(),"CSatellite::newMsg(CMsg &msg)");
-    if(psys!=nullptr){    
-       psys->newMsg(msg);       
-      }
-    return;  
-  } 
-}
-
-
-void CSatellite::stats(){
-  pstate->stats();  
-  state_core.stats();  
-}
-
-void CSatellite::setup() {    //Anything not in a loop must be setup manually  or have setup done automatically when called
-  Radio.Name("RADIO");
-  Radio.setTransmitter(true);
-  Radio2.Name("RADIO2");
-  Radio2.setTransmitter(false);
-
-  state_lowpower.addSystem(&Delay);
-  state_core.addSystem(&Radio);
-  state_core.addSystem(&Radio2);
-  state_core.addSystem(&Mgr);  
-  //state_core.addSystem(&RW);    //RW needs to be in core because if you are running it you cant switch states and turn it off
-  state_phone.addSystem(&Phone);  
-
-  IMUI2C.Name("IMUI2C");   
-  IMUSPI.Name("IMUSPI");
-
-  IMUI2C.remap();
-  IMUSPI.remap();
+void CSatellite::setup() {    //Anything not in a loop must be setup manually  or have setup done automatically when called    
+  _state_adcs.name(_ADCS);
+  _state_core.name(_CORE);  
+  _state_deployantenna.name(_DEPLOY);
+  _state_detumble.name(_DETUMBLE);
+  _state_lowpower.name(_LOWPOWER);  
+  _state_normal.name(_NORMAL);
+  _state_payload.name(_PAYLOAD);
   
-  IRX1.Name("IRX1");
-  IRX2.Name("IRX2");
-  IRY1.Name("IRY1");
-  IRY2.Name("IRY2");
-  IRZ1.Name("IRZ1");
-  IRZ2.Name("IRZ2");
+  _manager.name(_MANAGER);
+  _messages.name(_MESSAGES);    
+  _keyboard.name(_KEYBOARD);
   
-  MagX.Name("MAGX");
-  MagY.Name("MAGY");
-  MagZ.Name("MAGZ");
+  _IMUI2C.name(_IMUI);   
+  _IMUSPI.name(_IMUS);
   
-  MotorX.Name("MOTORX");
-  MotorY.Name("MOTORY");
-  MotorZ.Name("MOTORZ");
+  _ir_X1.name(_IRX1);
+  _ir_X2.name(_IRX2);
+  _ir_Y1.name(_IRY1);
+  _ir_Y2.name(_IRY2);
+  _ir_Z1.name(_IRZ1);
+  _ir_Z2.name(_IRZ2);
 
-  MotorX.config(MOTOR_X_SPEED,MOTOR_X_FG,MOTOR_X_DIR);
-  MotorY.config(MOTOR_Y_SPEED,MOTOR_Y_FG,MOTOR_Y_DIR);
-  MotorZ.config(MOTOR_Z_SPEED,MOTOR_Z_FG,MOTOR_Z_DIR);
+  _magneTorquers.name(_MAGNETORQUERS);
+  _magX.name(_MAGX);
+  _magY.name(_MAGY);
+  _magZ.name(_MAGZ);
 
+/*
+  _gps.name(_GPS);
   
-  TempX1.Name("TEMPX1");
-  TempX2.Name("TEMPX2");
-  TempY1.Name("TEMPY1");
-  TempY2.Name("TEMPY2");
-  TempZ1.Name("TEMPZ1");
-  TempZ2.Name("TEMPZ2");
-  TempOBC.Name("TEMPOBC");
-  TempADCS.Name("TEMPADCS");
-
-  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)    
-    
-  IRX1.config(IRARRAY_ADDRESS_X1,&Wire);
-  IRX2.config(IRARRAY_ADDRESS_X2,&Wire);
-  IRY1.config(IRARRAY_ADDRESS_Y1,&Wire1);
-  IRY2.config(IRARRAY_ADDRESS_Y2,&Wire1);
-  IRZ1.config(IRARRAY_ADDRESS_Z1,getWire2());
-  IRZ2.config(IRARRAY_ADDRESS_Z2,getWire2());
-
-  TempOBC.config(TEMP_OBC,&Wire);
-  TempADCS.config(TEMP_ADCS,&Wire);
-  TempX1.config(TEMP_X1,&Wire);
-  TempX2.config(TEMP_X2,&Wire);
-  TempY1.config(TEMP_Y1,&Wire1);
-  TempY2.config(TEMP_Y2,&Wire1);
-  TempZ1.config(TEMP_Z1,getWire2());
-  TempZ2.config(TEMP_Z2,getWire2());
-    
-  MagX.config(MAG_ADDRESS_X,getWire2());  
-  MagY.config(MAG_ADDRESS_Y,getWire2());  
-  MagZ.config(MAG_ADDRESS_Z,getWire2());
-  #endif
- // state_normal.addSystem(&IRX1);
- /*
-      state_normal.addSystem(&IR);
-    state_normal.addSystem(&IRX1);
-    state_normal.addSystem(&IRX2);
-    state_normal.addSystem(&IRY1);
-    state_normal.addSystem(&IRY2);
-    state_normal.addSystem(&IRZ1);
-    state_normal.addSystem(&IRZ2);
-
-
-    state_normal.addSystem(&IRX1);
-    state_normal.addSystem(&Example);    
-      
- //   state_normal.addSystem(&IMUI2C);   
- //   state_normal.addSystem(&IMUSPI);   
-      
- //   state_detumble.addSystem(&IMUI2C);   
- //   state_detumble.addSystem(&IMUSPI);   
-      
-  //  state_normal.addSystem(&Temperature);  
-  //  state_normal.addSystem(&TempX1);     
-  //  state_normal.addSystem(&TempX2);     
-  //  state_normal.addSystem(&TempY1);     
-  //  state_normal.addSystem(&TempY2);     
-  //  state_normal.addSystem(&TempZ1);     
-  //  state_normal.addSystem(&TempZ2);     
-  
-    state_detumble.addSystem(&MT);
- 
-    
-    state_adcs.addSystem(&RW);
-    state_adcs.addSystem(&MagX);
-    state_adcs.addSystem(&MagY);
-    state_adcs.addSystem(&MagZ);
- // state_adcs.addSystem(&IMUI2C);   
- // state_adcs.addSystem(&IMUSPI);
-    state_adcs.addSystem(&MotorX);
-    state_adcs.addSystem(&MotorY);
-    state_adcs.addSystem(&MotorZ);
-    
-    state_phone.addSystem(&Phone);
- 
-
-
-// state_core.addSystem(&Radio2);
-// state_core.addSystem(&Power);
-   state_core.setup();  
-  
-  CMsg msg;
-  msg.setSYS("MGR");
-  msg.setACT("CMD_GPS_OUTPUT");   
-// Mgr.addMessageList(msg);
-
-  msg.setSYS("MGR");
-  msg.setACT("CMD_IRX1_OUTPUT");   
-//  Mgr.addMessageList(msg);
-
-  msg.setSYS("MGR");
-  msg.setACT("SHOWCOMMANDS");   
-// Mgr.addMessageList(msg);
-
-  msg.setSYS("SYSTEMMGR");
-  msg.setACT("I2C1");
-  Mgr.addMessageList(msg);
-  CMsg msg;
-  msg.setSYS("EXAMPLE");
-  msg.setACT("START");
-  Mgr.addMessageList(msg);
+  _motorX.name(_MOTORX);
+  _motorY.name(_MOTORY);
+  _motorZ.name(_MOTORZ);
 */
+  _phone.name(_PHONE);
+ // _power.name(_POWER);
+ 
+  _radio.name(_RADIO);
+  //_radio2.name(_RADIO2);                                //Warning!!!  When one radio Radio2 is #defined as Radio as well
+
+  //_reactionWheels.name(_RW);
+  _scheduler.name(_SCHEDULER);
+
+  _tempX1.name(_TEMPX1);
+  _tempX2.name(_TEMPX2);
+  _tempY1.name(_TEMPY1);
+  _tempY2.name(_TEMPY2);
+  _tempZ1.name(_TEMPZ1);
+  _tempZ2.name(_TEMPZ2);
+  _tempOBC.name(_TEMPOBC);  
 
 
-  readCounts();
+///////////////////////////////////////////////////////////////////////    
+
+  //state_normal.addSystem(&MotorX);  
+  //state_core.addSystem(&ReactionWheels);    //RW needs to be in core because if you are running it you cant switch states and turn it off  
   
-}
-
-
-void CSatellite::readCounts() {
-  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)    
-  if(1){
-     CFS fs;    
-     state_deployantenna._burncount=fs.readFile();    
-  }
-  if(1){
-     CFS fs;
-     fs.setFilename(DETUMBLE_FILE);
-     state_detumble._detumblecount=fs.readFile();      
-  }
-  if(1){
-     CFS fs;  
-     fs.setFilename(RS_FILE);
-     _restartcount=fs.readFile();     
-     _restartcount++;
-     fs.deleteFile(); 
-     fs.writeFile(_restartcount);    
-  }
+  _state_core.addSystem(&_messages);
+  _state_core.addSystem(&_radio);      
+  _state_core.addSystem(&_phone);      
+  //_state_core.addSystem(&_scheduler);  
+  
+  _state_core.addSystem(&_keyboard);
+  
+  //_state_core.addSystem(&_power);    
+  //_state_core.addSystem(&_radio2);
+ _state_core.setForever();
+  
+  _radio.setTransmitter(true);
+  _radio.setReceiver(true);
+  _radio.setReceiver(false);
+  _radio2.setTransmitter(false);
 
   
-  CMsg msg;
-  msg.setTABLE("INFO");
-  msg.setParameter("RESTARTS",_restartcount);
-  msg.setParameter("BURNS",state_deployantenna._burncount);
-  msg.setParameter("DETUMBLES",state_detumble._detumblecount);
+  addSystem(&_state_normal);
+
+  //_state_normal.addSystem(&_state_lowpower);
+
+  _state_normal.setMaxTime(MAXRUNTIME);
+  _state_normal.onEnter[_PINOBCI2C]=true;
+  _state_normal.onExit[_PINOBCI2C]=true;
+
+
+  _state_lowpower.setMaxTime(MAXRUNTIME);
+  _state_lowpower.onEnter[_PIN65V]=true;
+  _state_lowpower.onEnter[_PINBURNWIRE]=true;
+  _state_lowpower.onEnter[_PINOBCI2C]=true;
+  _state_lowpower.onEnter[_PINPHONEPOWER]=true;  
+
   
-  Mgr.addTransmitList(msg);   
-  #endif
-}
-
-
-
-
-
-void CSatellite::MsgPump() {
-	//Gets messages receieved from radio, pushes to message list and then pumps them out
-  CMsg msg;
-	MSG.moveReceived();
-  int count=0;
-  while(  MSG.MessageList.size()){
-    count++;
-    if(count>20)
-      break;
-    msg = MSG.MessageList.back();
-    MSG.MessageList.pop_back();
-    if(msg.Parameters.size()){
+  
+ // _state_detumble.addSystem(&_MagneTorquers);
+ // _state_detumble.addSystem(&_IMUI2C);
+ // _state_detumble.addSystem(&_IMUSPI);
+ // _state_detumble.addSystem(&_magX);
+ // _state_detumble.addSystem(&_magY);
+ // _state_detumble.addSystem(&_magZ);
       
-      newMsg(msg);   //Satellite
-      state_core.newMsg(msg);   //core
-      if(msg.getParameter("PROCESSED","")=="1"){
-        writeconsole(msg.getParameter("PROCESSED",""));writeconsoleln("______________________  CSatellite::MsgPump Processed  _______________________");
-        continue;
-      }
-  	  pstate->newMsg(msg);   //Current State      
-    }
-	}
+//  _state_adcs.addSystem(&_ReactionWheels);
+//  _state_adcs.addSystem(&_IMUI2C);
+//  _state_adcs.addSystem(&_IMUSPI);
+//  _state_adcs.addSystem(&_motorX);
+//  _state_adcs.addSystem(&_motorY);
+//  _state_adcs.addSystem(&_motorZ);
+     
+ // _state_payload.addSystem(&_phone);
 
-	MSG.MessageList.clear();//Probable make sure messages have all been processed.  I think they will as only thing that can add messages should be the loop
+///////////////////////////////////////////////////////////////////////
+    
+
+ // _state_deployantenna.setMaxTime(10000);
+  _state_deployantenna.onEnter[_PINBURNWIRE]=true;
+  _state_deployantenna.onExit[_PINBURNWIRE]=true;
+  
+ // _state_adcs.setMaxTime(2*TIMEORBIT);
+  _state_adcs.onEnter[_PIN65V]=true;
+  _state_adcs.onEnter[_PINADCSI2C]=true;
+  _state_adcs.onExit[_PIN65V]=true;
+  _state_adcs.onExit[_PINADCSI2C]=true;
+  
+ // _IMUSPI.remap();
+
+ 
+  _tempOBC.config(TEMP_OBC,&Wire);
+  _tempX1.config(TEMP_X1,&Wire);
+  _tempX2.config(TEMP_X2,&Wire);
+  _tempY1.config(TEMP_Y1,&Wire1);
+  _tempY2.config(TEMP_Y2,&Wire1);
+  _tempZ1.config(TEMP_Z1,&Wire2);
+  _tempZ2.config(TEMP_Z2,&Wire2);
+
+  _ir_X1.config(IRARRAY_ADDRESS_X1,&Wire);
+  _ir_X2.config(IRARRAY_ADDRESS_X2,&Wire);
+  _ir_Y1.config(IRARRAY_ADDRESS_Y1,&Wire1);
+  _ir_Y2.config(IRARRAY_ADDRESS_Y2,&Wire1);
+  _ir_Z1.config(IRARRAY_ADDRESS_Z1,&Wire2);
+  _ir_Z2.config(IRARRAY_ADDRESS_Z2,&Wire2);
+
+
+ /*
+  _motorX.config(MOTOR_X_SPEED,MOTOR_X_FG,MOTOR_X_DIR);
+  _motorY.config(MOTOR_Y_SPEED,MOTOR_Y_FG,MOTOR_Y_DIR);
+  _motorZ.config(MOTOR_Z_SPEED,MOTOR_Z_FG,MOTOR_Z_DIR);
+*/
+  _magX.config(MAG_ADDRESS_X,&Wire2);  
+  _magY.config(MAG_ADDRESS_Y,&Wire2);  
+  _magZ.config(MAG_ADDRESS_Z,&Wire2);
+    
+  //_state_core.setup();  
+  
+    
+  #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
+    //mountFS();
+  #endif  
+
+
+  _IMUI2C.remap();
+
+  _IMUI2C.config(IMUADDRESS1,&Wire);
+  
+  delay(100);
+  
+  readCounts();  
+  
+  _restartcount++;
+ // writeCounts();  
+ _scheduler.initSat();  //Commands that are autoscheduled  
+ initPins();
+  
 }
 
+void CSatellite::loop(){
+  _state_core.loop();
+  CStateObj::loop();
+}
 
-void CSatellite::updateRadios(CMsg &msg){  
-    std::string transmitter=msg.getParameter("TRANSMITTER","");
-    std::string sleeper=msg.getParameter("SLEEP","");
-    writeconsoleln("updateRadios(CMsg &msg)");
-    writeconsoleln(transmitter);
+void CSatellite::changeState(CMsg &msg) {    //Changes states by adding clearing stateslist and adding core and the new state
 
-    if(transmitter.size()){
-      if(transmitter=="RADIO") {
-          Radio.setTransmitter(true);
-          Radio2.setTransmitter(false);
-      }
-      if(transmitter=="RADIO2") {        
-          Radio.setTransmitter(false);
-          Radio2.setTransmitter(true);
-      }    
-    }
+  CMsg mm=getDataMap(_SATINFO);       
+  addTransmitList(msg);  
+  
+  writeconsole("CHANGING STATE ......................Items: ");writeconsoleln((int)subsystems.size());
+    
+  std::string s=msg.get(_VALUE);
 
-    if(sleeper.size()){
-      if(sleeper=="RADIO") {
-          Radio.sleep(true);        
-      }
-      if(sleeper=="RADIO2") {        
-          Radio2.sleep(true);
-      }    
-    }
+  if(mm.get(_STATE)==s){
+    writeconsoleln("State the same.   Leaving.");
+    return;
+  }
+  if(s.size()==0)
+    return;
+
+  CSystemObject *pstate=getSystem(s.c_str(),"CSatellite::newState(CMsg &msg)");
+  
+  if(pstate==NULL)
+    return;
+
+  unsigned int n=0;
+
+  n=(unsigned int)pstate;
+  writeconsole("New state ..cuz changing state ");
+  writeconsole((long) n);
+  writeconsoleln(pstate->name());
+  
+  for(auto x:subsystems){  //Tell subsystems you are leaving so they can do what they need
+    n=(unsigned int)x;
+    writeconsole("Tell Leaving cuz changing state ");
+    writeconsole((long) n);
+    writeconsoleln(x->name());
+    if(x->name()!=_CORE)         x->exit();
+  }
+
+  subsystems.clear();   
+
+          
+  // pstate->stateMsg(msg);  //Passes parameters of what you want the state to do
+  
+  pstate->setMsg(msg);  //whatever stuff u want to send 
+  pstate->enter();
+  
+//  addSystem(&_state_core);      /// Puts CORE BACK!!!! 
+  addSystem(pstate);
+  
+  mm=getDataMap(_SATINFO);       mm.set(_STATE,s);      addDataMap(mm);      
+
+  writeconsole("END CHANGING STATE ......................");writeconsoleln((int)subsystems.size());
+}
+
+void CSatellite::createState(CMsg &msg){  //Creates a completely new state Appends a state
+  writeconsoleln("NNNNNNNNNNNNNNNNNNNNNN OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
+  return;
+  std::string s=msg.get(_VALUE);
+  long lmax=msg.get(_MAXTIME,3*TIMEORBIT);
+  if(s.size()>1){    
+    CStateObj *pState=new CStateObj();
+    pState->name(s);
+    pState->setForever(false);
+    pState->setMaxTime(lmax);
+    addSystem(pState);
+
+
+    CMsg m=getDataMap(_SATINFO); 
+    std::string curst=m.get(_STATE);
+    s+=";";
+    s+=curst;
+    m.set(_STATE,s);
+    addDataMap(_SATINFO,m); 
+  }  
 }

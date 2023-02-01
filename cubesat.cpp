@@ -4,6 +4,7 @@ CSatellite::CSatellite() {  }
 
 
 void CSatellite::setup() {    //Anything not in a loop must be setup manually  or have setup done automatically when called    
+  writeconsoleln("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  SATELLITE SETUP   -  SHOULD BE ONLY ONCE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   _state_adcs.name(_ADCS);
   _state_core.name(_CORE);  
   _state_deployantenna.name(_DEPLOY);
@@ -91,7 +92,8 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   _state_lowpower.onEnter[_PIN65V]=true;
   _state_lowpower.onEnter[_PINBURNWIRE]=true;
   _state_lowpower.onEnter[_PINOBCI2C]=true;
-  _state_lowpower.onEnter[_PINPHONEPOWER]=true;  
+  _state_lowpower.onEnter[_PINPHONE]=true;  
+  _state_lowpower.onExit[_PINPHONE]=true; 
 
   
   

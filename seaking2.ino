@@ -11,12 +11,10 @@
   #include "mbed.h"
 #else
   #define Wire2 Wire
-#endif
-
-#ifdef TTGO1
   #include <axp20x.h>
   #include <boards.h>
 #endif
+
 
 
 ////////////////////////  DONT WRITE TO SERIAL PORT BEFORE ITS DECLARED  -----   NO WRITING TO CONSOLE IN CONSTRUCTORS OF SYSTEMS THAT ARE BELOW ----------------------////////////////////////////////////////////////
@@ -53,14 +51,11 @@ void mysetup() {
   Wire1.begin();
   Wire2.begin();
    
-  #ifdef TTGO1
-   initBoard();   
-  #endif 
-  #ifdef MYESP32
-//  esp_task_wdt_init(WDT_TIMEOUT, true); // panic so ESP32 restarts
-//  esp_task_wdt_add(NULL); //add current thread to WDT watch
-//Serial.println(ESP.getFreeHeap());
-  #endif
+  
+   
+  
+  
+
   #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
   //Super IMPORTANT  Initialize SPIs so not floating!!!!
   
@@ -70,19 +65,23 @@ void mysetup() {
   digitalWrite(PJ_8,HIGH);
   //mbed_reset_reboot_count();
   //mbed::Watchdog::get_instance().start(WATCHDOGWAIT); 
-
+  #else
+  initBoard();   
+  //  esp_task_wdt_init(WDT_TIMEOUT, true); // panic so ESP32 restarts
+//  esp_task_wdt_add(NULL); //add current thread to WDT watch
+//Serial.println(ESP.getFreeHeap());
+  Wire.begin(21,22);
   #endif
   
   while (!Serial&&(getTime()<10000))  ;
   writeconsoleln("Starting...");
+  
   delay(1000);
-  #if defined(TTGO) || defined(TTGO1)
-   Wire.begin(21,22);
-  #endif 
+  
   
   Wire.setClock(400000); 
   Wire1.setClock(400000); 
-  Wire2.setClock(1000000); 
+  Wire2.setClock(400000); 
   delay(1000);  
   
   sat.setup();           

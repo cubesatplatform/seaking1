@@ -24,23 +24,17 @@
 
 
 #define IAM "ADR1"
-
-#ifdef SAT
-#undef SAT
 #define SAT IAM
-#endif
-
 
 
 CSatellite sat;
-
 
 void setup() {   }
 
 void mysetup() {    
   sat.name(IAM);
   sat.setIAM(sat.name());
-  //Serial.begin(115200);
+  
   Serial.begin(1000000);
   long tt=getTime();
   while (!Serial){
@@ -51,9 +45,6 @@ void mysetup() {
   Wire1.begin();
   Wire2.begin();
    
-  
-   
-  
   
 
   #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
@@ -91,7 +82,6 @@ void mysetup() {
 
 //Check to make sure time isnt getting too big and overflows (~50days), reset
 
-
 void loop() {      
   CMsg msg;
 
@@ -108,7 +98,6 @@ void loop() {
     #if defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_H7_M7)
 //      if(count%WATCHDOG_LOOP_COUNT==0) mbed::Watchdog::get_instance().kick();   
     #endif 
-
         
   }      
 }

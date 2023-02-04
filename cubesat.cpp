@@ -14,7 +14,7 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   _state_payload.name(_PAYLOAD);
   
   _manager.name(_MANAGER);
-  _messages.name(_MESSAGES);    
+  _msgPump.name("PUMP");    
   _keyboard.name(_KEYBOARD);
   
   _IMUI2C.name(_IMUI);   
@@ -62,7 +62,7 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   //state_normal.addSystem(&MotorX);  
   //state_core.addSystem(&ReactionWheels);    //RW needs to be in core because if you are running it you cant switch states and turn it off  
   
-  _state_core.addSystem(&_messages);
+  _state_core.addSystem(&_msgPump);
   _state_core.addSystem(&_radio);      
   _state_core.addSystem(&_phone);      
   //_state_core.addSystem(&_scheduler);  
@@ -75,7 +75,7 @@ void CSatellite::setup() {    //Anything not in a loop must be setup manually  o
   
   _radio.setTransmitter(true);
   _radio.setReceiver(true);
-  _radio.setReceiver(false);
+  _radio2.setReceiver(false);
   _radio2.setTransmitter(false);
 
   

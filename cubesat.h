@@ -3,7 +3,7 @@
 #include "defs.h"
 #include <csfilenames.h>
 
-#include <systemmessages.h>
+#include <msgpump.h>
 #include <stateobj.h>
 
 
@@ -58,11 +58,10 @@ public:
   CIMU _IMUI2C;     
  
   CIRArray _ir_X1,_ir_X2,_ir_Y1,_ir_Y2,_ir_Z1,_ir_Z2;
-
   
   CMagTorquer _magneTorquers;
   
-  CMessagesObj _messages;
+  CMsgPump _msgPump;
   
   CMDrive _magX;
   CMDrive _magY;
